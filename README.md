@@ -12,6 +12,13 @@ Clone https://github.com/betabandido/minikube-provisioner and follow the instruc
 
 You might want to use `tmux` to have multiple virtual terminals multiplexed into a single real one. `Ctrl+B C` creates a new window. `Ctrl+B <number>` switches to the specified window (using its index). `Ctrl+B [` enters scroll mode, and `q` goes back to normal mode.
 
+### Enable Add-ons
+
+```bash
+sudo minikube addons enable heapster
+sudo minikube addons enable metrics-server
+```
+
 ## Explore the Cluster
 
 Run the following command to list all the different resources in the cluster:
@@ -23,7 +30,7 @@ kubectl get all --all-namespaces
 ## Creating a Docker Image for the Application
 
 ```bash
-cd hello
+cd ~/k8s-workshop/hello
 sudo docker build -t hello:0.1 .
 ```
 
@@ -132,16 +139,6 @@ Then use that port together with the external address of the EC2 instance to acc
 
 Explore the different resources in the cluster (pods, deployments, services, etc.).
 
-### Performance Monitoring
-
-Run the following command to send traffic to the application:
-
-```bash
-while true; do curl $(minikube service hello --url) ; done
-```
-
-After some seconds you should see an increase in CPU utilization.
-
 ## Updating a Deployment
 
 Change `main.py` so that it returns another message, and then create a new docker image with a new tag:
@@ -169,13 +166,55 @@ from flask import Flask, abort
 
 @app.route('/healthz')
 def healthz():
-    return abort(500)
+    abort(500)
 ```
 
 Create a new docker image:
 
 ```bash
 sudo docker build -t hello:0.3 .
+```
+
+Update the `deployment.yaml` file to use the new image, and update the deployment:
+
+```bash
+kubectl apply -f k8s/deployment.yaml
+```
+
+Watch pod status:
+
+```bash
+watch kubectl get pods
+```
+
+To rollback the deployment execute:
+
+```bash
+kubectl rollout undo deployment/hello
+```
+
+## Autoscaling
+
+Create and deploy the `cpu` application (this application performs a CPU-intensive operation when it receives a request):
+
+```bash
+cd ~/k8s-workshop/cpu
+sudo docker build -t cpu:0.1 .
+kubectl apply -f k8s
+```
+
+### Performance Monitoring
+
+Run the following command to send traffic to the application:
+
+```bash
+while true; do curl $(minikube service cpu --url) ; done
+```
+
+After some seconds you should see an increase in CPU utilization. Then, the auto-scale mechanism will trigger, creating new replicas. Run the following command to see the new replicas being created:
+
+```bash
+watch kubectl get pods
 ```
 
 ## Next Steps
