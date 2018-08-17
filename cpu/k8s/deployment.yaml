@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu
+  labels:
+    app: cpu
+spec:
+  selector:
+    matchLabels:
+      app: cpu
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cpu
+    spec:
+      containers:
+        - name: cpu
+          image: cpu:0.1
+          ports:
+            - name: flask
+              containerPort: 5000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: flask
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: flask
